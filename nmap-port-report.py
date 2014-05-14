@@ -29,13 +29,47 @@ def evalargs():
     f = {}
     if len(sys.argv) < 2 or len(sys.argv) < 3 or len(sys.argv) > 3:
         print "This script takes 2 command line arguments, path to the nmap directory and name of the report file.\n"
-        xmldir = raw_input("What is the path to the nmap directory: ");
-        repfile = raw_input("What is the name of the report file: ");
+        xmldir = get_check_path()
+        repfile = get_check_rep()
     else:
         xmldir = sys.argv[1]
-        repfile = sys.argv[2] 
+        if xmldir[:-1] != '\\':
+            xmldir += '\\'
+        if os.path.exists(xmldir) == False:
+            xmldir = get_check_path()
+        repfile = sys.argv[2]
+        if repfile[:-4] != '.csv':
+            repfile += '.csv'
+        if os.path.isfile(xmldir + repfile):
+            repfile = get_check_rep()
     f = Popen('dir /b ' + xmldir + '*.xml', shell=True, stdout=PIPE)
     files = f.communicate()[0].split('\n')
+        
+
+def get_check_path():
+    path = ''
+    path = raw_input('The path to the xmlfiles is not valid, enter path: ')
+    if path[:-1] != '\\':
+        path += '\\'
+    if os.path.exists(path):
+        return path
+    else:
+        path = get_check_path()
+        return path
+    
+
+def get_check_rep():
+    global xmldir
+    outfile = ''
+    outfile = raw_input('Name of report file: ')
+    if outfile[:-4] != '.csv':
+        outfile += '.csv'
+    if os.path.isfile(xmldir + outfile):
+        print 'file exists, try harder.\n'
+        outfile = get_check_rep()
+    else:
+        return outfile
+        
 
 def loop_files():
     global tree, root, files
@@ -46,7 +80,6 @@ def loop_files():
         if len(x) > 4:
             tree = ET.parse(xmldir + x)
             root = tree.getroot()
-            print x
             parse()
 
 
@@ -79,6 +112,7 @@ def parse():
     for host in root.findall('host'):
         addrobj = host.find('address')
         ipaddress = addrobj.get('addr')
+        ipaddress = ''.join(ipaddress.split())
         ports = host.find('ports')
         for x in ports.findall('port'):
             protocol = x.get('protocol')
@@ -94,9 +128,9 @@ def parse():
             else:
                 proto[protocol][port] = {}
 
-
-            if x.find('service') == True:
-                service = x.find('service')
+            service = x.find('service')
+            if service != None:
+                
 
                 if service.get('name') == None:
                     servicename = 'None'
@@ -133,15 +167,15 @@ def parse():
 
             
         
-            print type(productname)
             if 'IP' in proto[protocol][port][servicename][productname]:
-                if ipaddress in proto[protocol][port][servicename][productname]['IP'] == True:
-                    continue
+                if ipaddress in proto[protocol][port][servicename][productname]['IP']:
+                    pass
                 else:
                     proto[protocol][port][servicename][productname]['IP'].append(ipaddress)
             else:
                 proto[protocol][port][servicename][productname]['IP'] = []
                 proto[protocol][port][servicename][productname]['IP'].append(ipaddress)
+
             
 def check_rep_file():
     global writefile, xmldir, repfile
@@ -152,21 +186,87 @@ def check_rep_file():
     else:
         writefile = open(xmldir + repfile, 'w')
 
+
+def remove_duplicates():
+    global proto
+    servicename = ''
+    productname = ''
+    sp = {}
+    s = {}
+    p = {}
+    popkey = []
+    removeip = []
+    
+
+    for protocol in sorted(proto):
+        for port in sorted(proto[protocol]):
+            sp[port] = []
+            s[port] = []
+            p[port] = []
+            for servicename in proto[protocol][port]:
+                for productname in proto[protocol][port][servicename]:
+                    if servicename != 'None' and productname != 'None':
+                        sp[port].extend(proto[protocol][port][servicename][productname]['IP'])
+                    elif servicename !='None' and productname == 'None':
+                        s[port].extend(proto[protocol][port][servicename][productname]['IP'])
+                    elif servicename == 'None' and productname != 'None':
+                        p[port].extend(proto[protocol][port][servicename][productname]['IP'])
+
+        
+    
+    for protocol in sorted(proto):
+        for port in sorted(proto[protocol]):
+            for servicename in proto[protocol][port]:
+                for productname in proto[protocol][port][servicename]:
+                    if servicename == 'None' and productname == 'None':
+                        for ip in proto[protocol][port][servicename][productname]['IP']:
+                            if ip in sp[port]:
+                                removeip.append(ip)
+                            if ip in s[port]:
+                                removeip.append(ip)
+                            if ip in p[port]:
+                                removeip.append(ip)
+                        for ip in removeip:
+                            proto[protocol][port][servicename][productname]['IP'].remove(ip)
+                        removeip = []
+                    if servicename != 'None' and productname == 'None':
+                        for ip in proto[protocol][port][servicename][productname]['IP']:
+                            if ip in sp[port]:
+                                removeip.append(ip)
+                        for ip in removeip:
+                            proto[protocol][port][servicename][productname]['IP'].remove(ip)
+                        removeip = []
+                    if servicename == 'None' and productname != 'None':
+                        for ip in proto[protocol][port][servicename][productname]['IP']:
+                            if ip in sp[port]:
+                                removeip.append(ip)
+                        for ip in removeip:
+                            proto[protocol][port][servicename][productname]['IP'].remove(ip)
+                        removeip = []
+                            
+                            
+                        
+    
+
     
 def report():
     global proto, xmldir, repfile, writefile
 
     report = ""
     check_rep_file()    
-    
+
+    writefile.write('TCP/UDP,Port#,Service Name,Product Name,IP List\n')
     for protocol in sorted(proto):
         for port in sorted(proto[protocol]):
             for servicename in sorted(proto[protocol][port]):
                 for productname in sorted(proto[protocol][port][servicename]):
-                    addresses = ",".join(proto[protocol][port][servicename][productname]['IP'])
-                    report = protocol + ',' + str(port) + ',' + servicename + ',' + productname + ',' + addresses + "\n"
-                    print report
-                    writefile.write(report)
+                    if not proto[protocol][port][servicename][productname]['IP']:
+                        pass
+                    else:
+                        addresses = ",".join(proto[protocol][port][servicename][productname]['IP'])
+                        report = protocol + ',' + str(port) + ',' + servicename + ',' + productname + ',' + addresses + "\n"
+                        #print report
+                        writefile.write(report)
     writefile.close()
 
         
@@ -176,6 +276,7 @@ Begin main program
 
 evalargs()
 loop_files()
+remove_duplicates()
 report()
 
 #print root
