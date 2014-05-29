@@ -95,14 +95,12 @@ def loop_files():
        if x[-1:] == '\r':
            x = x[:-1]
        if len(x) > 4:
-           #try:
-               print 'Trying....'
+           try:
                tree = ET.parse(xmldir + x)
-               print 'loaded element tree....'
                root = tree.getroot()
                parse()
-           #except:
-           #    print 'Failed to parse: ' + xmldir + x
+           except:
+               print 'Failed to parse: ' + xmldir + x
 
 
 def parse():
