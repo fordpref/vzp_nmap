@@ -566,9 +566,9 @@ def report():
     writefile3 = open(repfile3, 'w')
     writefile4 = open(repfile4, 'w')
  
-    writefile1.write('IP/TCP/UDP,Port#,Service Name,Product Name,IP List\n')
-    writefile2.write('IP/TCP/UDP,Port#,Service Name,Product Name,IP List\n')
-    writefile3.write('IP/TCP/UDP,Port#,Service Name,Product Name,IP List\n')
+    writefile1.write('IP,Port#,Service Name,Product Name,IP List\n')
+    writefile2.write('TCP,Port#,Service Name,Product Name,IP List\n')
+    writefile3.write('UDP,Port#,Service Name,Product Name,IP List\n')
     writefile4.write('OSName,type,vendor,family,IP Addresses\n')
     for protocol in sorted(proto):
         for port in sorted(proto[protocol]):
