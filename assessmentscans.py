@@ -240,11 +240,17 @@ def hostnames():
 
     os.system(clear)
     print '\n\nPerforming reverse lookups on IP hostlist we just collected.\n'
+    dns = raw_input('Input IP address of DNS Server: ')
+    if dns:
+        dns = '--dns-servers ' + dns + ' '
+    else:
+        dns = ''
+        
     if opsys == 'Windows':
-        rawdata = Popen('nmap.exe -sL -iL ' + hostlistfile + ' -oA ' + filename, stdout=PIPE, stderr=PIPE)
+        rawdata = Popen('nmap.exe -sL ' + dns + '-iL ' + hostlistfile + ' -oA ' + filename, stdout=PIPE, stderr=PIPE)
         rawdata = rawdata.communicate()[0].split('\n')
     else:
-        rawdata = Popen('nmap -sL -iL ' + hostlistfile + ' -oA ' + filename, stdout=PIPE, stderr=PIPE, shell = True)
+        rawdata = Popen('nmap -sL ' + dns + '-iL ' + hostlistfile + ' -oA ' + filename, stdout=PIPE, stderr=PIPE, shell = True)
         rawdata = rawdata.communicate()[0].split('\n')
     for line in rawdata:
         if line.startswith('Nmap scan report'):
@@ -260,14 +266,21 @@ def hostnames():
 def tcpscans():
     global opsys, hostlist, nmapdir, clear
     date = date_time_stamp()
+    top = '10000'
     tempfile = nmapdir + date + '-' + descname + '-TCP-SYNSCAN'
     
     os.system(clear)
+    print '\n\nWe only want to scan the top X number of TCP ports.\n'
+    print 'For example:  1000 or 10000\n'
+    print 'Hit ENTER to just accept the top 10000\n'
+    top = raw_input('How many of the top ports do you want to scan: ')
+    if top == '':
+        top = '10000'
     print '\n\nPerforming TCP Syn Scans\n'
     if opsys == 'Windows':
-        call('nmap.exe -Pn -n --open -sS --top-ports 10000 -A --max-hostgroup 10 --max-retries 3 --host-timeout 5m -iL ' + hostlistfile + ' -oA ' + tempfile)
+        call('nmap.exe -Pn -n --open -sS --top-ports ' + top + ' -A --max-hostgroup 2 --host-timeout 5m -iL ' + hostlistfile + ' -oA ' + tempfile)
     else:
-        call('nmap -Pn -n --open -sS --top-ports 10000 -A --max-hostgroup 10 --max-retries 3 --host-timeout 5m -iL ' + hostlistfile + ' -oA ' + tempfile, shell = True)
+        call('nmap -Pn -n --open -sS --top-ports ' + top + ' -A --max-hostgroup 2 --host-timeout 5m -iL ' + hostlistfile + ' -oA ' + tempfile, shell = True)
 
 def udpscans():
     global opsys, hostlist, nmapdir, clear
@@ -275,11 +288,18 @@ def udpscans():
     tempfile = nmapdir + date + '-' + descname + '-UDP-SCAN'
     
     os.system(clear)
+    print '\n\nWe only want to scan the top X number of UDP ports.\n'
+    print 'For example:  10 or 20\n'
+    print 'Hit ENTER to just accept the top 10\n'
+    top = raw_input('How many of the top ports do you want to scan: ')
+    if top == '':
+        top = '10'
+
     print '\n\nPerforming UDP Syn Scans\n'
     if opsys == 'Windows':
-        call('nmap.exe -Pn -n --open -sU --top-ports 20 -sV -sC --max-hostgroup 10 --max-retries 3 --host-timeout 2m -iL ' + hostlistfile + ' -oA ' + tempfile)
+        call('nmap.exe -Pn -n --open -sU --top-ports ' + top + ' -sV -sC --max-hostgroup 2 --host-timeout 5m -iL ' + hostlistfile + ' -oA ' + tempfile)
     else:
-        call('nmap -Pn -n --open -sU --top-ports 20 -sV -sC --max-hostgroup 10 --max-retries 3 --host-timeout 2m -iL ' + hostlistfile + ' -oA ' + tempfile, shell = True)
+        call('nmap -Pn -n --open -sU --top-ports ' + top + ' -sV -sC --max-hostgroup 2 --host-timeout 5m -iL ' + hostlistfile + ' -oA ' + tempfile, shell = True)
 
 def ipscans():
     global opsys, hostlist, nmapdir, clear
@@ -287,11 +307,18 @@ def ipscans():
     tempfile = nmapdir + date + '-' + descname + '-IPPROTO-SCAN'
     
     os.system(clear)
+    print '\n\nWe only want to scan the top X number of IP ports.\n'
+    print 'For example:  10 or 20\n'
+    print 'Hit ENTER to just accept the top 10\n'
+    top = raw_input('How many of the top ports do you want to scan: ')
+    if top == '':
+        top = '10'
+
     print '\n\nPerforming IPPROTO Syn Scans\n'
     if opsys == 'Windows':
-        call('nmap.exe -Pn -n --open -sO --max-hostgroup 10 --max-retries 3 --host-timeout 2m -iL ' + hostlistfile + ' -oA ' + tempfile)
+        call('nmap.exe -Pn -n --open -sO --top-ports ' + top + ' --max-hostgroup 2 --host-timeout 5m -iL ' + hostlistfile + ' -oA ' + tempfile)
     else:
-        call('nmap -Pn -n --open -sO --max-hostgroup 10 --max-retries 3 --host-timeout 2m -iL ' + hostlistfile + ' -oA ' + tempfile, shell = True)
+        call('nmap -Pn -n --open -sO --top-ports ' + top + ' --max-hostgroup 2 --host-timeout 5m -iL ' + hostlistfile + ' -oA ' + tempfile, shell = True)
 
 def portreportprep():
     global files, opsys, nmapdir, tree, root
