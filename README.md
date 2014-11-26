@@ -39,16 +39,16 @@ python assessmentscans.py
 The program prompts you for the rest.
 
 
-'nmap-port-report' parses all the xml in the directory you give it
+'nmap-report' parses all the xml in the directory you give it
 to put together the port report csv files.  This is useful if you run
 some custom nmap scans after the initial scans and you want to see
 any new information in the port report file.
 
 Usage Windows:
-nmap-port-report.exe
+nmap-report.exe
 -or-
-python nmap-port-report.py
+python nmap-report.py
 
 Usage Linux:
-python nmap-port-report.py
+python nmap-report.py
 
