@@ -130,7 +130,7 @@ def parse():
     do here.  proto['TCP']['##']['servicename']['productname'] = [ip list]
     """
 
-    global proto, root, parseos
+    global proto, root, parseos, hostlist
 
     protocol = ''
     port = ''
@@ -151,6 +151,8 @@ def parse():
         addrobj = host.find('address')
         ipaddress = addrobj.get('addr')
         ipaddress = ''.join(ipaddress.split())
+        if (ipaddress in hostlist) == False:
+            hostlist.append(ipaddress)
         ports = host.find('ports')
 
         if ports != None:
@@ -346,18 +348,22 @@ def remove_duplicates():
                             removeip = []
    
 def report():
-    global proto, nmapdir, parseos
+    global proto, nmapdir, parseos, hostlist
  
     report = ''
+    hostreport = {}
+    hostosreport = {}
     date = date_time_stamp()
     repfile1 = nmapdir + 'nmap-IPPROTO-port-report-' + date + '.csv'
     repfile2 = nmapdir + 'nmap-TCP-port-report-' + date + '.csv'
     repfile3 = nmapdir + 'nmap-UDP-port-report-' + date + '.csv'
     repfile4 = nmapdir + 'os-report-' + date + '.csv'
+    repfile5 = nmapdir + 'nmap-hostport-report-' + date + '.csv'
     writefile1 = open(repfile1, 'w')
     writefile2 = open(repfile2, 'w')
     writefile3 = open(repfile3, 'w')
     writefile4 = open(repfile4, 'w')
+    writefile5 = open(repfile5, 'w')
  
     writefile1.write('IP,Port#,Service Name,Product Name,Version,IP List\n')
     writefile2.write('TCP,Port#,Service Name,Product Name,Version,IP List\n')
@@ -371,6 +377,14 @@ def report():
                         if not proto[protocol][port][servicename][productname][version]['IP']:
                             pass
                         else:
+                            for ip in proto[protocol][port][servicename][productname][version]['IP']:
+                                if (ip in hostreport) == False:
+                                    hostreport[ip] = []
+                                    line = protocol + ',' + str(port) + ',' + servicename + ',' + productname + ',' + str(version) + '\n'
+                                    hostreport[ip].append(line)
+                                else:
+                                    line = protocol + ',' + str(port) + ',' + servicename + ',' + productname + ',' + str(version) + '\n'
+                                    hostreport[ip].append(line)
                             addresses = ",".join(proto[protocol][port][servicename][productname][version]['IP'])
                             report = protocol + ',' + str(port) + ',' + servicename + ',' + productname + ',' + str(version) + ',' + addresses + "\n"
                             #print report
@@ -382,6 +396,11 @@ def report():
                                 writefile3.write(report)
  
     for tempos in sorted(parseos):
+        for ip in parseos[tempos]['ipaddress']:
+            if (ip in hostosreport) == False:
+                hostosreport[ip] = ''
+                line = tempos + ',' + parseos[tempos]['type'] + ',' + parseos[tempos]['vendor'] + ',' + parseos[tempos]['osfamily'] + '\n'
+                hostosreport[ip] = line            
         addresses = ','.join(parseos[tempos]['ipaddress'])
         report = tempos + ',' + parseos[tempos]['type'] + ',' + parseos[tempos]['vendor'] + ',' + parseos[tempos]['osfamily'] + ',' + addresses + '\n'
         writefile4.write(report) 
@@ -389,6 +408,25 @@ def report():
     writefile2.close()
     writefile3.close()
     writefile4.close()
+    for ip in hostlist:
+        if (ip in hostreport) or (ip in hostosreport):
+            writefile5.write('IP address,OS Name,OS Type,OS Vendor,OS Family\n')
+            if (ip in hostosreport):
+                report = ip + ',' + hostosreport[ip]
+            else:
+                report = ip + ',none,none,none,none\n'
+            writefile5.write(report)
+            writefile5.write('\n')
+            writefile5.write(' ,proto,port,Service Name,Product Name,Version\n')
+            if (ip in hostreport):
+                for line in hostreport[ip]:
+                    writefile5.write(' ,' + line)
+            else:
+                pass
+            writefile5.write('\n\n\n')
+    writefile5.close()
+        
+        
 
        
 """
